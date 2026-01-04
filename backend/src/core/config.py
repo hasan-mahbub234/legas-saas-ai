@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int = 15
     
     # Database
-    DATABASE_URL: str = "postgresql://mahbubdb:mahbub123@localhost:5432/legal_saas"
+    DATABASE_URL: str 
     
     # CORS
     CORS_ORIGINS: List[AnyHttpUrl] = [
@@ -95,4 +95,5 @@ class Settings(BaseSettings):
 
 
 # Global settings instance
+
 settings = Settings()
