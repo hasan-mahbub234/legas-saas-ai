@@ -1,238 +1,144 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import DashboardLayout from "@/components/dashboard-layout";
-import { documentsAPI } from "@/lib/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
-  FileText,
-  Clock,
-  AlertCircle,
-  CheckCircle2,
-  ArrowRight,
-  Plus,
-  MessageSquare,
-  ShieldCheck,
-} from "lucide-react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/lib/auth-context";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
 import { Spinner } from "@/components/ui/spinner";
+import { ShieldCheck, Eye, EyeOff } from "lucide-react";
 
-export default function DashboardPage() {
-  const [stats, setStats] = useState({
-    total: 0,
-    processed: 0,
-    processing: 0,
-    failed: 0,
-  });
-  const [recentDocs, setRecentDocs] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function LoginPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
+  const { toast } = useToast();
+  const router = useRouter();
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const response = await documentsAPI.list({ limit: 5 });
-        setRecentDocs(response.documents);
-
-        const allDocs = await documentsAPI.list({ limit: 100 });
-        const counts = allDocs.documents.reduce(
-          (acc, doc) => {
-            acc.total++;
-            if (doc.status === "PROCESSED") acc.processed++;
-            else if (doc.status === "PROCESSING") acc.processing++;
-            else if (doc.status === "FAILED") acc.failed++;
-            return acc;
-          },
-          { total: 0, processed: 0, processing: 0, failed: 0 }
-        );
-
-        setStats(counts);
-      } catch (error) {
-        console.error("Failed to load dashboard data:", error);
-      } finally {
-        setLoading(false);
-      }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      await login(email, password);
+      toast({
+        title: "Login successful",
+        description: "Welcome back to LegalAI.",
+      });
+      router.push("/dashboard");
+    } catch (error) {
+      toast({
+        title: "Login failed",
+        description: error.message || "Invalid credentials.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
-    loadData();
-  }, []);
+  };
 
-  const statCards = [
-    {
-      title: "Total Documents",
-      value: stats.total,
-      icon: FileText,
-      color: "text-blue-500",
-      bg: "bg-blue-500/10",
-    },
-    {
-      title: "Processed",
-      value: stats.processed,
-      icon: CheckCircle2,
-      color: "text-green-500",
-      bg: "bg-green-500/10",
-    },
-    {
-      title: "Processing",
-      value: stats.processing,
-      icon: Clock,
-      color: "text-yellow-500",
-      bg: "bg-yellow-500/10",
-    },
-    {
-      title: "Failed",
-      value: stats.failed,
-      icon: AlertCircle,
-      color: "text-red-500",
-      bg: "bg-red-500/10",
-    },
-  ];
-
-  if (loading) {
-    return (
-      <DashboardLayout>
-        <div className="h-full flex items-center justify-center">
-          <Spinner className="w-8 h-8 text-primary" />
-        </div>
-      </DashboardLayout>
-    );
-  }
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
 
   return (
-    <DashboardLayout>
-      <div className="space-y-8 animate-in fade-in duration-500">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Overview</h1>
-          <p className="text-muted-foreground">
-            Monitor and manage your legal documents.
-          </p>
-        </div>
+    <div className="min-h-screen flex items-center justify-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/20 via-background to-background p-4">
+      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))] pointer-events-none" />
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {statCards.map((stat, i) => (
-            <Card key={i} className="glass overflow-hidden border-border/50">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      {stat.title}
-                    </p>
-                    <p className="text-2xl font-bold mt-1">{stat.value}</p>
-                  </div>
-                  <div className={`p-3 rounded-2xl ${stat.bg}`}>
-                    <stat.icon className={`w-5 h-5 ${stat.color}`} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        <div className="grid lg:grid-cols-3 gap-8">
-          <Card className="lg:col-span-2 glass border-border/50">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Recent Documents</CardTitle>
-              <Link href="/documents">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-2 text-primary hover:text-primary hover:bg-primary/10"
+      <Card className="w-full max-w-md glass animate-in fade-in zoom-in duration-500">
+        <CardHeader className="space-y-1 text-center">
+          <div className="flex justify-center mb-4">
+            <div className="p-3 rounded-2xl bg-primary/10 glass-subtle">
+              <ShieldCheck className="w-10 h-10 text-primary" />
+            </div>
+          </div>
+          <CardTitle className="text-3xl font-bold tracking-tight">
+            Welcome back
+          </CardTitle>
+          <CardDescription className="text-muted-foreground">
+            Enter your credentials to access your legal dashboard
+          </CardDescription>
+        </CardHeader>
+        <form onSubmit={handleSubmit}>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="m@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="bg-background/50 border-border/50 focus:border-primary/50 transition-colors"
+              />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                <Link
+                  href="/forgot-password"
+                  className="text-xs text-primary hover:underline underline-offset-4"
                 >
-                  View All <ArrowRight className="w-4 h-4" />
-                </Button>
-              </Link>
-            </CardHeader>
-            <CardContent>
-              {recentDocs.length > 0 ? (
-                <div className="space-y-4">
-                  {recentDocs.map((doc) => (
-                    <div
-                      key={doc.id}
-                      className="flex items-center justify-between p-4 rounded-2xl bg-primary/5 border border-border/50 hover:border-primary/30 transition-colors"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="p-2 rounded-xl bg-background border border-border/50">
-                          <FileText className="w-5 h-5 text-primary" />
-                        </div>
-                        <div>
-                          <p className="font-semibold truncate max-w-[200px] md:max-w-md">
-                            {doc.original_filename}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(doc.created_at).toLocaleDateString()} •{" "}
-                            {Math.round(doc.file_size / 1024)} KB
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span
-                          className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-                            doc.status === "PROCESSED"
-                              ? "bg-green-500/10 text-green-500 border-green-500/20"
-                              : doc.status === "FAILED"
-                              ? "bg-red-500/10 text-red-500 border-red-500/20"
-                              : "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
-                          }`}
-                        >
-                          {doc.status}
-                        </span>
-                        <Link href={`/documents/${doc.id}`}>
-                          <Button variant="ghost" size="icon">
-                            <ArrowRight className="w-4 h-4" />
-                          </Button>
-                        </Link>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-20" />
-                  <p className="text-muted-foreground">
-                    No documents uploaded yet.
-                  </p>
-                  <Link href="/documents/upload">
-                    <Button className="mt-4 bg-primary text-primary-foreground">
-                      Upload your first document
-                    </Button>
-                  </Link>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="glass border-border/50 h-fit">
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Link href="/documents/upload" className="block">
-                <Button className="w-full justify-start gap-3 h-14 rounded-2xl bg-primary text-primary-foreground">
-                  <Plus className="w-5 h-5" />
-                  Analyze New Document
-                </Button>
-              </Link>
-              <Link href="/ai-chat" className="block">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-3 h-14 rounded-2xl glass bg-transparent"
-                >
-                  <MessageSquare className="w-5 h-5 text-primary" />
-                  Chat with AI
-                </Button>
-              </Link>
-              <div className="pt-4 p-4 rounded-2xl bg-accent/5 border border-accent/20">
-                <p className="text-sm font-semibold mb-2 flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-accent" />
-                  Security Status
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Your data is encrypted with enterprise-grade security.
-                </p>
+                  Forgot password?
+                </Link>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </DashboardLayout>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="bg-background/50 border-border/50 focus:border-primary/50 transition-colors pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={togglePasswordVisibility}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4">
+            <Button
+              type="submit"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-6 rounded-xl transition-all duration-300 shadow-lg shadow-primary/20"
+              disabled={isLoading}
+            >
+              {isLoading ? <Spinner className="mr-2" /> : "Sign In"}
+            </Button>
+            <p className="text-sm text-center text-muted-foreground">
+              Don't have an account?{" "}
+              <Link
+                href="/register"
+                className="text-primary hover:underline underline-offset-4 font-medium"
+              >
+                Create an account
+              </Link>
+            </p>
+          </CardFooter>
+        </form>
+      </Card>
+    </div>
   );
 }
